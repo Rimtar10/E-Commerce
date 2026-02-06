@@ -1,6 +1,6 @@
 import { getAuth } from "@clerk/nextjs/server";
 import authSeller from "@/middlewares/authSeller";
-import imagekit from "@/configs/imageKit";
+import { imagekit } from "@/configs/imageKit";
 import prisma from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
@@ -29,11 +29,11 @@ export async function POST(request) {
         }
 
         //uploading images to ImageKit
-        const imagesUrls = await Promise.all(images.map(async(images) => {
-            const buffer = Buffer.from(await images.arrayBuffer());
+        const imagesUrls = await Promise.all(images.map(async(image) => {
+            const buffer = Buffer.from(await image.arrayBuffer());
             const response = await imagekit.upload({
                 file: buffer,
-                fileName: imagekit.name,
+                fileName: image.name,
                 folder: "products",  
             })
             const url = imagekit.url({

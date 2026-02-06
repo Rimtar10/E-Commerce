@@ -1,4 +1,42 @@
-import { createSlice } from '@reduxjs/toolkit'
+import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
+import axios from 'axios'
+
+let debounceTimer = null
+export const uploadCart = createAsyncThunk('cart/uploadCart', async ({getToken}, thunkAPI) => {
+    try {
+        clearTimeout(debounceTimer)
+        await new Promise((resolve) => {
+            debounceTimer = setTimeout(async () => {
+                const {cartItems} = thunkAPI.getState().cart;
+                const token = await getToken();
+                await axios.post('/api/cart', {cart: cartItems}, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                })
+                resolve()
+            }, 1000)
+        })
+    } catch (error) {
+        return thunkAPI.rejectWithValue(error.response.data)
+    }
+})
+
+
+export const fetchCart = createAsyncThunk('cart/fetchCart', async ({getToken}, thunkAPI) => {
+    try {
+        const token = await getToken()
+        const {data} = await axios.get('/api/cart', {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        })
+        return data.cart
+
+    } catch (error) {
+        return thunkAPI.rejectWithValue(error.response.data)
+    }
+})
 
 const cartSlice = createSlice({
     name: 'cart',
@@ -35,6 +73,13 @@ const cartSlice = createSlice({
             state.cartItems = {}
             state.total = 0
         },
+    },
+    extraReducers: (builder) => {
+        builder
+            .addCase(fetchCart.fulfilled, (state, action) => {
+                state.cartItems = action.payload || {}
+                state.total = Object.values(action.payload || {}).reduce((acc, item) => acc + item, 0)
+            })
     }
 })
 

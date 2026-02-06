@@ -5,7 +5,8 @@ import { useEffect, useState } from "react"
 import { MailIcon, MapPinIcon } from "lucide-react"
 import Loading from "@/components/Loading"
 import Image from "next/image"
-import { dummyStoreData, productDummyData } from "@/assets/assets"
+import axios from "axios"
+import toast from "react-hot-toast"
 
 export default function StoreShop() {
 
@@ -15,9 +16,15 @@ export default function StoreShop() {
     const [loading, setLoading] = useState(true)
 
     const fetchStoreData = async () => {
-        setStoreInfo(dummyStoreData)
-        setProducts(productDummyData)
-        setLoading(false)
+        try {
+            const {data} = await axios.get(`/api/store/data?username=${username}`)
+            setStoreInfo(data.store)
+            setProducts(data.store.Product || [])
+        } catch (error) {
+            toast.error(error.response?.data?.error || error.message)
+        } finally {
+            setLoading(false)
+        }
     }
 
     useEffect(() => {
@@ -60,7 +67,11 @@ export default function StoreShop() {
             <div className=" max-w-7xl mx-auto mb-40">
                 <h1 className="text-2xl mt-12">Shop <span className="text-slate-800 font-medium">Products</span></h1>
                 <div className="mt-5 grid grid-cols-2 sm:flex flex-wrap gap-6 xl:gap-12 mx-auto">
-                    {products.map((product) => <ProductCard key={product.id} product={product} />)}
+                    {products && products.length > 0 ? (
+                        products.map((product) => <ProductCard key={product.id} product={product} />)
+                    ) : (
+                        <p className="text-slate-400 text-center w-full py-10">No products available</p>
+                    )}
                 </div>
             </div>
         </div>
