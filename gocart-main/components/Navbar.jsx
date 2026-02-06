@@ -1,5 +1,5 @@
 'use client'
-import { Search, ShoppingBag, ShoppingCart, Package } from "lucide-react";
+import { Search, ShoppingBag, ShoppingCart, Package, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -13,12 +13,30 @@ const Navbar = () => {
 
     const [search, setSearch] = useState('');
     const [mounted, setMounted] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const cartCount = useSelector(state => state.cart.total);
 
     // Fix hydration issue
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Close mobile menu when route changes
+    useEffect(() => {
+        setMobileMenuOpen(false);
+    }, [router]);
+
+    // Prevent body scroll when mobile menu is open
+    useEffect(() => {
+        if (mobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [mobileMenuOpen]);
 
     const handleSearch = (e) => {
         e.preventDefault();
@@ -39,6 +57,45 @@ const Navbar = () => {
                         </Protect>
                        
                     </Link>
+
+                    {/* Mobile Menu Button and User Button */}
+                    <div className="flex items-center gap-3 sm:hidden">
+                        <button
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                            className="p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                            aria-label="Toggle menu"
+                            aria-expanded={mobileMenuOpen}
+                        >
+                            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                        </button>
+                        {mounted && (
+                            <>
+                                {user ? (
+                                    <UserButton>
+                                        <UserButton.MenuItems>
+                                            <UserButton.Action 
+                                                labelIcon={<ShoppingCart size={16} />} 
+                                                label="Cart" 
+                                                onClick={() => router.push("/cart")}
+                                            />
+                                            <UserButton.Action 
+                                                labelIcon={<Package size={16} />} 
+                                                label="My Orders" 
+                                                onClick={() => router.push("/orders")}
+                                            />
+                                        </UserButton.MenuItems>
+                                    </UserButton>
+                                ) : (
+                                    <button 
+                                        onClick={openSignIn} 
+                                        className="px-5 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-sm transition text-white rounded-full"
+                                    >
+                                        Login
+                                    </button>
+                                )}
+                            </>
+                        )}
+                    </div>
 
                     {/* Desktop Menu */}
                     <div className="hidden sm:flex items-center gap-4 lg:gap-8 text-slate-600">
@@ -90,36 +147,103 @@ const Navbar = () => {
                             </>
                         )}
                     </div>
+                </div>
 
-                    {/* Mobile User Button */}
-                    <div className="sm:hidden">
-                        {mounted && (
-                            <>
-                                {user ? (
-                                    <UserButton>
-                                        <UserButton.MenuItems>
-                                            <UserButton.Action 
-                                                labelIcon={<ShoppingCart size={16} />} 
-                                                label="Cart" 
-                                                onClick={() => router.push("/cart")}
-                                            />
-                                            <UserButton.Action 
-                                                labelIcon={<Package size={16} />} 
-                                                label="My Orders" 
-                                                onClick={() => router.push("/orders")}
-                                            />
-                                        </UserButton.MenuItems>
-                                    </UserButton>
-                                ) : (
-                                    <button 
-                                        onClick={openSignIn} 
-                                        className="px-7 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-sm transition text-white rounded-full"
+                {/* Mobile Menu Overlay */}
+                {mobileMenuOpen && (
+                    <div 
+                        className="fixed inset-0 bg-black/50 z-40 sm:hidden"
+                        onClick={() => setMobileMenuOpen(false)}
+                        aria-hidden="true"
+                    />
+                )}
+
+                {/* Mobile Menu Panel */}
+                <div 
+                    className={`fixed top-0 right-0 h-full w-[280px] bg-white shadow-2xl z-50 transform transition-transform duration-300 ease-in-out sm:hidden ${
+                        mobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+                    }`}
+                    aria-label="Mobile navigation"
+                >
+                    <div className="flex flex-col h-full">
+                        <div className="flex items-center justify-between p-4 border-b">
+                            <h2 className="text-lg font-semibold text-slate-700">Menu</h2>
+                            <button
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="p-2 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                                aria-label="Close menu"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-4">
+                            <form onSubmit={handleSearch} className="flex items-center text-sm gap-2 bg-slate-100 px-4 py-3 rounded-full mb-6">
+                                <Search size={18} className="text-slate-600" />
+                                <input 
+                                    className="w-full bg-transparent outline-none placeholder-slate-600" 
+                                    type="text" 
+                                    placeholder="Search products" 
+                                    value={search} 
+                                    onChange={(e) => setSearch(e.target.value)} 
+                                    required 
+                                />
+                            </form>
+
+                            <nav className="flex flex-col gap-1">
+                                <Link 
+                                    href="/" 
+                                    className="px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Home
+                                </Link>
+                                <Link 
+                                    href="/shop" 
+                                    className="px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Shop
+                                </Link>
+                                <Link 
+                                    href="/" 
+                                    className="px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    About
+                                </Link>
+                                <Link 
+                                    href="/" 
+                                    className="px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    Contact
+                                </Link>
+                                <Link 
+                                    href="/cart" 
+                                    className="px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition flex items-center justify-between"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                >
+                                    <span className="flex items-center gap-2">
+                                        <ShoppingCart size={18} />
+                                        Cart
+                                    </span>
+                                    <span className="text-xs text-white bg-slate-600 size-5 rounded-full flex items-center justify-center">
+                                        {cartCount}
+                                    </span>
+                                </Link>
+                                {mounted && user && (
+                                    <Link 
+                                        href="/orders" 
+                                        className="px-4 py-3 text-slate-700 hover:bg-slate-100 rounded-lg transition flex items-center gap-2"
+                                        onClick={() => setMobileMenuOpen(false)}
                                     >
-                                        Login
-                                    </button>
+                                        <Package size={18} />
+                                        My Orders
+                                    </Link>
                                 )}
-                            </>
-                        )}
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>
