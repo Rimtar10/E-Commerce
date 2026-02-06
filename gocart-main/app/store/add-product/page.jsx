@@ -2,10 +2,10 @@
 import { assets } from "@/assets/assets"
 import { useAuth } from "@clerk/nextjs"
 import axios from "axios"
-import { set } from "date-fns"
 import Image from "next/image"
 import { useState } from "react"
 import { toast } from "react-hot-toast"
+
 
 export default function StoreAddProduct() {
 
@@ -20,12 +20,54 @@ export default function StoreAddProduct() {
         category: "",
     })
     const [loading, setLoading] = useState(false)
+    const [aiUsed, setaiUsed] = useState(false)
+
+
 
     const {getToken} = useAuth()
 
 
     const onChangeHandler = (e) => {
         setProductInfo({ ...productInfo, [e.target.name]: e.target.value })
+    }
+
+    const handleImageUpload = async (key, file ) => {
+        setImages(prev => ({ ...prev, [key]: file }));
+
+        if(key === "1" && file && !aiUsed){
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onloadend = async () => {
+                const base64String = reader.result.split(',')[1];
+                const mimeType = file.type;
+                const token = await getToken();
+
+                try {
+                    await toast.promise(
+                        axios.post('/api/store/ai', { base64Image: base64String, mimeType }, {
+                            headers: {
+                                Authorization: `Bearer ${token}`
+                            }
+                        }),
+                        {
+                            loading: "Analyzing image with AI...",
+                            success: (res) => {
+                                const data = res.data;
+                                if(data.name && data.description){
+                                    setProductInfo(prev => ({ ...prev, name: data.name, description: data.description }))
+                                    setaiUsed(true);
+                                    return "AI analysis successful, fields auto-filled!"
+                                }
+                                return "AI could not analyze the image"
+                            },
+                            error: (err)=> err?.response?.data?.error || err.message
+                        }
+                    )
+                } catch (error) {
+                    console.error(error)
+                }
+            }
+        }
     }
 
     const onSubmitHandler = async (e) => {
@@ -49,12 +91,18 @@ export default function StoreAddProduct() {
                 
             })
             const token = await getToken();
-            const {data} = await axios.post('/api/store/product', formData, {
-                headers: {
-                    Authorization: `Bearer ${token}`
+            const {data} = await toast.promise(
+                axios.post('/api/store/product', formData, {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }),
+                {
+                    loading: "Adding Product...",
+                    success: (res) => res.data.message,
+                    error: "Failed to add product"
                 }
-            })
-            toast.success(data.message);
+            );
 
             //reset form
             setProductInfo({
@@ -78,7 +126,7 @@ export default function StoreAddProduct() {
 
 
     return (
-        <form onSubmit={e => toast.promise(onSubmitHandler(e), { loading: "Adding Product..." })} className="text-slate-500 mb-28">
+        <form onSubmit={onSubmitHandler} className="text-slate-500 mb-28">
             <h1 className="text-2xl">Add New <span className="text-slate-800 font-medium">Products</span></h1>
             <p className="mt-7">Product Images</p>
 
@@ -86,7 +134,7 @@ export default function StoreAddProduct() {
                 {Object.keys(images).map((key) => (
                     <label key={key} htmlFor={`images${key}`}>
                         <Image width={300} height={300} className='h-15 w-auto border border-slate-200 rounded cursor-pointer' src={images[key] ? URL.createObjectURL(images[key]) : assets.upload_area} alt="" />
-                        <input type="file" accept='image/*' id={`images${key}`} onChange={e => setImages({ ...images, [key]: e.target.files[0] })} hidden />
+                        <input type="file" accept='image/*' id={`images${key}`} onChange={e => handleImageUpload(key, e.target.files[0])} hidden />
                     </label>
                 ))}
             </div>
