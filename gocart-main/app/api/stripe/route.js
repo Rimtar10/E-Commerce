@@ -16,10 +16,14 @@ export async function POST(request) {
                 payment_intent: paymentIntentId
             })
 
+            if (!session.data || session.data.length === 0) {
+                throw new Error('No session found for payment intent');
+            }
+
             const {orderIds, userId, appId} = session.data[0].metadata;
 
                 if(appId !== 'gocart'){
-                    return NextResponse.json({received:true, message: 'Invalid app ID' });
+                    throw new Error('Invalid app ID');
                 }
 
                 const orderIdsArray = orderIds.split(',')
@@ -66,12 +70,5 @@ export async function POST(request) {
     } catch (error) {
         console.error(error);
         return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-}
-
-
-export const config = {
-    api: {
-        bodyParser: false
     }
 }
