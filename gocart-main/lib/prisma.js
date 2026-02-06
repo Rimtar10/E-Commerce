@@ -14,8 +14,8 @@ const connectionString = process.env.DATABASE_URL;
 const pool = new Pool({ connectionString });
 const adapter = new PrismaNeon(pool);
 
-const prisma = global.prisma || new PrismaClient({ adapter });
+const prisma = global.prisma || new PrismaClient(process.env.NEXT_RUNTIME === 'edge' ? { adapter} : {});
 
-if (process.env.NODE_ENV !== 'production') global.prisma = prisma;
+if (process.env.NEXT_RUNTIME !== 'edge') global.prisma = prisma;
 
 export default prisma;
