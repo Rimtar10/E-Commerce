@@ -1,5 +1,5 @@
 'use client'
-import { Search, ShoppingBag, ShoppingCart, Package, Menu, X } from "lucide-react";
+import { Search, ShoppingBag, ShoppingCart, Package, Menu, X, Shield, Store } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -14,12 +14,60 @@ const Navbar = () => {
     const [search, setSearch] = useState('');
     const [mounted, setMounted] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+    const [isSeller, setIsSeller] = useState(false);
     const cartCount = useSelector(state => state.cart.total);
 
     // Fix hydration issue
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    // Check if user is admin
+    useEffect(() => {
+        const checkAdminStatus = async () => {
+            if (user) {
+                try {
+                    const response = await fetch('/api/admin/is-admin');
+                    if (response.ok) {
+                        const data = await response.json();
+                        setIsAdmin(data.isAdmin);
+                    } else {
+                        setIsAdmin(false);
+                    }
+                } catch (error) {
+                    console.error('Error checking admin status:', error);
+                    setIsAdmin(false);
+                }
+            } else {
+                setIsAdmin(false);
+            }
+        };
+        checkAdminStatus();
+    }, [user]);
+
+    // Check if user is a seller
+    useEffect(() => {
+        const checkSellerStatus = async () => {
+            if (user) {
+                try {
+                    const response = await fetch('/api/store/is-seller');
+                    if (response.ok) {
+                        const data = await response.json();
+                        setIsSeller(data.isSeller);
+                    } else {
+                        setIsSeller(false);
+                    }
+                } catch (error) {
+                    console.error('Error checking seller status:', error);
+                    setIsSeller(false);
+                }
+            } else {
+                setIsSeller(false);
+            }
+        };
+        checkSellerStatus();
+    }, [user]);
 
     // Close mobile menu when route changes
     useEffect(() => {
@@ -83,6 +131,20 @@ const Navbar = () => {
                                                 label="My Orders" 
                                                 onClick={() => router.push("/orders")}
                                             />
+                                            {isSeller && (
+                                                <UserButton.Action 
+                                                    labelIcon={<Store size={16} />} 
+                                                    label="My Store" 
+                                                    onClick={() => router.push("/store")}
+                                                />
+                                            )}
+                                            {isAdmin && (
+                                                <UserButton.Action 
+                                                    labelIcon={<Shield size={16} />} 
+                                                    label="Admin Dashboard" 
+                                                    onClick={() => router.push("/admin")}
+                                                />
+                                            )}
                                         </UserButton.MenuItems>
                                     </UserButton>
                                 ) : (
@@ -141,6 +203,20 @@ const Navbar = () => {
                                                 label="My Orders" 
                                                 onClick={() => router.push("/orders")}
                                             />
+                                            {isSeller && (
+                                                <UserButton.Action 
+                                                    labelIcon={<Store size={16} />} 
+                                                    label="My Store" 
+                                                    onClick={() => router.push("/store")}
+                                                />
+                                            )}
+                                            {isAdmin && (
+                                                <UserButton.Action 
+                                                    labelIcon={<Shield size={16} />} 
+                                                    label="Admin Dashboard" 
+                                                    onClick={() => router.push("/admin")}
+                                                />
+                                            )}
                                         </UserButton.MenuItems>
                                     </UserButton>
                                 )}
